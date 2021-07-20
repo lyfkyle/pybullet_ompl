@@ -15,7 +15,7 @@ class Maze2D():
         p.setTimeStep(1./240.)
 
         # load robot
-        robot_id = p.loadURDF("my_planar_robot_model/urdf/my_planar_robot_4_link.xacro", (0,0,0))
+        robot_id = p.loadURDF("planar_robot_model/planar_robot_4_link.xacro", (0,0,0))
         robot = MyPlanarRobot(robot_id)
         self.robot = robot
 
@@ -67,7 +67,7 @@ class Maze2D():
         self.robot.set_state(start)
         res, path = self.pb_ompl_interface.plan(goal)
         if res:
-            self.pb_ompl_interface.execute(self.path)
+            self.pb_ompl_interface.execute(path)
         return res, path
 
 if __name__ == '__main__':

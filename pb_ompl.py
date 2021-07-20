@@ -7,7 +7,8 @@ except ImportError:
     # subdirectory of the parent directory called "py-bindings."
     from os.path import abspath, dirname, join
     import sys
-    sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'ompl/py-bindings'))
+    sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'whole-body-motion-planning/src/ompl/py-bindings'))
+    print(sys.path)
     from ompl import util as ou
     from ompl import base as ob
     from ompl import geometric as og
@@ -17,7 +18,7 @@ import time
 from itertools import product
 
 INTERPOLATE_NUM = 500
-DEFAULT_PLANNING_TIME = 1.0
+DEFAULT_PLANNING_TIME = 10.0
 
 class PbOMPLRobot():
     '''
@@ -79,6 +80,7 @@ class PbStateSpace(ob.RealVectorStateSpace):
     def __init__(self, num_dim) -> None:
         super().__init__(num_dim)
         self.num_dim = num_dim
+        self.state_sampler = None
 
     def allocStateSampler(self):
         '''

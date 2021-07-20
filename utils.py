@@ -101,8 +101,6 @@ JointInfo = namedtuple('JointInfo', ['jointIndex', 'jointName', 'jointType',
                                      'jointMaxForce', 'jointMaxVelocity', 'linkName', 'jointAxis',
                                      'parentFramePos', 'parentFrameOrn', 'parentIndex'])
 
-get_links = get_joints
-
 def get_joint_info(body, joint):
     return JointInfo(*p.getJointInfo(body, joint))
 
@@ -114,6 +112,8 @@ def get_num_joints(body):
 
 def get_joints(body):
     return list(range(get_num_joints(body)))
+
+get_links = get_joints
 
 def get_all_links(body):
     return [BASE_LINK] + list(get_links(body))
