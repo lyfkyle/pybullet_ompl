@@ -5,18 +5,7 @@ https://github.com/StanfordVL/iGibson/blob/master/igibson/external/pybullet_tool
 
 from __future__ import print_function
 
-import colorsys
-import json
-import math
-import os
-import pickle
-import platform
-import numpy as np
 import pybullet as p
-import random
-import sys
-import time
-import datetime
 from collections import defaultdict, deque, namedtuple
 from itertools import product, combinations, count
 
