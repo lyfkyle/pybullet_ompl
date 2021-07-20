@@ -2,8 +2,8 @@
 This repo provides interface to use OMPL for motion planning inside PyBullet. It uses OMPL python bindings.
 
 # Environment
-Tested with:
-**Python 3.8**
+Tested with:<br>
+**Python 3.8**<br>
 **Ubuntu18.04**
 
 # Installation instructions:
