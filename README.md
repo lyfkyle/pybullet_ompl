@@ -1,6 +1,8 @@
 # pybullet_ompl
 This repo provides interface to use OMPL for motion planning inside PyBullet. It uses OMPL python bindings.
 
+![example](/images/example.gif)
+
 # Environment
 Tested with:<br>
 **Python 3.8**<br>
@@ -35,5 +37,5 @@ python3 maze_demo.py
 ```
 
 # Additional Information
-1. Currently only RRT and BITstar are enabled and tested. But all planners in OMPL should work. Just add them in the set_planner API in PbOMPL class.
-2. To work with other robot, you might need to inherit from PbOMPLRobot class in PbOMPL and override several functionalities. Refer to my_planar_robot.py for an example.
+1. Currently tested planners include PRM, RRT, RRTstar, RRTConnect, EST, FMT* and BIT*. But all planners in OMPL should work. Just add them in the set_planner API in PbOMPL class.
+2. To work with other robot, you might need to inherit from PbOMPLRobot class in PbOMPL and override several functionalities. Refer to my_planar_robot.py for an example. Refer to demo_plannar.py for an example.
