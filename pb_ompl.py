@@ -7,7 +7,8 @@ except ImportError:
     # subdirectory of the parent directory called "py-bindings."
     from os.path import abspath, dirname, join
     import sys
-    sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'ompl/py-bindings'))
+    # sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'ompl/py-bindings'))
+    sys.path.insert(0, join(dirname(abspath(__file__)), '../whole-body-motion-planning/src/ompl/py-bindings'))
     print(sys.path)
     from ompl import util as ou
     from ompl import base as ob
@@ -18,7 +19,7 @@ import time
 from itertools import product
 
 INTERPOLATE_NUM = 500
-DEFAULT_PLANNING_TIME = 10.0
+DEFAULT_PLANNING_TIME = 5.0
 
 class PbOMPLRobot():
     '''
@@ -31,11 +32,21 @@ class PbOMPLRobot():
     def __init__(self, id) -> None:
         # Public attributes
         self.id = id
-        self.num_dim = p.getNumJoints(id) # by default, all joints are actuated
-        self.joint_idx= list(range(self.num_dim))
 
-        self.joint_bounds = [[-float('inf'), float('inf')]] * self.num_dim
+        # prune fixed joints
+        all_joint_num = p.getNumJoints(id)
+        all_joint_idx = list(range(all_joint_num))
+        joint_idx = [j for j in all_joint_idx if self._is_not_fixed(j)]
+        self.num_dim = len(joint_idx)
+        self.joint_idx = joint_idx
+        print(self.joint_idx)
+        self.joint_bounds = []
+
         self.reset()
+
+    def _is_not_fixed(self, joint_idx):
+        joint_info = p.getJointInfo(self.id, joint_idx)
+        return joint_info[2] != p.JOINT_FIXED
 
     def get_joint_bounds(self):
         '''
@@ -44,9 +55,11 @@ class PbOMPLRobot():
         '''
         for i, joint_id in enumerate(self.joint_idx):
             joint_info = p.getJointInfo(self.id, joint_id)
-            if joint_info.jointLowerLimit < joint_info.jointUpperLimit:
-                self.joint_bounds[i][0] = joint_info.jointLowerLimit
-                self.joint_bounds[i][1] = joint_info.jointUpperLimit
+            low = joint_info[8] # low bounds
+            high = joint_info[9] # high bounds
+            if low < high:
+                self.joint_bounds.append([low, high])
+        print("Joint bounds: {}".format(self.joint_bounds))
         return self.joint_bounds
 
     def get_cur_state(self):
@@ -144,21 +157,20 @@ class PbOMPL():
 
     def is_state_valid(self, state):
         # satisfy bounds TODO
-        # if not pb_utils.all_between(lower_limits, state, upper_limits):
-            # pass
-            # print(lower_limits, q, upper_limits)
-            # print('Joint limits violated')
-            # return True
+        # Should be unecessary if joint bounds is properly set
 
+        # check self-collision
         self.robot.set_state(self.state_to_list(state))
         for link1, link2 in self.check_link_pairs:
             if utils.pairwise_link_collision(self.robot_id, link1, self.robot_id, link2):
-                #print(get_body_name(body), get_link_name(body, link1), get_link_name(body, link2))
+                # print(get_body_name(body), get_link_name(body, link1), get_link_name(body, link2))
                 return False
+
+        # check collision against environment
         for body1, body2 in self.check_body_pairs:
             if utils.pairwise_collision(body1, body2):
                 # print('body collision', body1, body2)
-                #print(get_body_name(body1), get_body_name(body2))
+                # print(get_body_name(body1), get_body_name(body2))
                 return False
         return True
 
@@ -168,14 +180,23 @@ class PbOMPL():
             [item for item in utils.get_moving_links(robot.id, robot.joint_idx) if not item in allow_collision_links])
         moving_bodies = [(robot.id, moving_links)]
         self.check_body_pairs = list(product(moving_bodies, obstacles))
-        print(self.check_body_pairs)
 
     def set_planner(self, planner_name):
         '''
-        TODO Add your planner here!!
+        Note: Add your planner here!!
         '''
-        if planner_name == "RRT":
+        if planner_name == "PRM":
+            self.planner = og.PRM(self.ss.getSpaceInformation())
+        elif planner_name == "RRT":
             self.planner = og.RRT(self.ss.getSpaceInformation())
+        elif planner_name == "RRTConnect":
+            self.planner = og.RRTConnect(self.ss.getSpaceInformation())
+        elif planner_name == "RRTstar":
+            self.planner = og.RRTstar(self.ss.getSpaceInformation())
+        elif planner_name == "EST":
+            self.planner = og.EST(self.ss.getSpaceInformation())
+        elif planner_name == "FMT":
+            self.planner = og.FMT(self.ss.getSpaceInformation())
         elif planner_name == "BITstar":
             self.planner = og.BITstar(self.ss.getSpaceInformation())
         else:
@@ -185,6 +206,9 @@ class PbOMPL():
         self.ss.setPlanner(self.planner)
 
     def plan_start_goal(self, start, goal, allowed_time = DEFAULT_PLANNING_TIME):
+        '''
+        plan a path to gaol from the given robot start state
+        '''
         print("start_planning")
         print(self.planner.params())
 
@@ -204,13 +228,13 @@ class PbOMPL():
         res = False
         sol_path_list = []
         if solved:
-            print("Found solution:")
+            print("Found solution: interpolating into {} segments".format(INTERPOLATE_NUM))
             # print the path to screen
             sol_path_geometric = self.ss.getSolutionPath()
             sol_path_geometric.interpolate(INTERPOLATE_NUM)
             sol_path_states = sol_path_geometric.getStates()
             sol_path_list = [self.state_to_list(state) for state in sol_path_states]
-            print(len(sol_path_list))
+            # print(len(sol_path_list))
             # print(sol_path_list)
             for sol_path in sol_path_list:
                 self.is_state_valid(sol_path)
