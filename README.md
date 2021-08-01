@@ -31,9 +31,15 @@ pip install pybullet
 ```
 
 # Demo
+Two examples are provided.
+This demo plans the arm motion of a Franka robot.
+```
+python examples/demo_franka.py
+```
+
 This demo plans whole-body motion of a planar 4-link snake-like robot.
 ```
-python3 maze_demo.py
+python examples/demo_planar.py
 ```
 
 # Additional Information
