@@ -6,12 +6,14 @@ import pybullet_data
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 
 import pb_ompl
+import time
+from pybullet_tools.utils import connect, WorldSaver, LockRenderer
 
 class BoxDemo():
     def __init__(self):
         self.obstacles = []
-
-        p.connect(p.GUI)
+        connect(use_gui=True)
+        # p.connect(p.GUI)
         p.setGravity(0, 0, -9.8)
         p.setTimeStep(1./240.)
 
@@ -53,7 +55,12 @@ class BoxDemo():
         goal = [0,1.5,0,-0.1,0,0.2,0]
 
         self.robot.set_state(start)
-        res, path = self.pb_ompl_interface.plan(goal)
+        time.sleep(1)
+        # saver = WorldSaver()
+        with LockRenderer(lock=True):
+            res, path = self.pb_ompl_interface.plan(goal)
+        self.robot.set_state(start)
+        
         if res:
             self.pb_ompl_interface.execute(path)
         return res, path

@@ -8,15 +8,19 @@ except ImportError:
     from os.path import abspath, dirname, join
     import sys
     # sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'ompl/py-bindings'))
-    sys.path.insert(0, join(dirname(abspath(__file__)), '../whole-body-motion-planning/src/ompl/py-bindings'))
+    sys.path.insert(0, join(dirname(abspath(__file__)), '../ompl/py-bindings'))
     print(sys.path)
     from ompl import util as ou
     from ompl import base as ob
     from ompl import geometric as og
 import pybullet as p
-import utils
+# import utils
+import pybullet_tools.utils as utils
 import time
 from itertools import product
+import copy
+
+pandaNumDofs = 7
 
 INTERPOLATE_NUM = 500
 DEFAULT_PLANNING_TIME = 5.0
@@ -63,7 +67,7 @@ class PbOMPLRobot():
         return self.joint_bounds
 
     def get_cur_state(self):
-        return self.state
+        return copy.deepcopy(self.state)
 
     def set_state(self, state):
         '''
@@ -85,9 +89,18 @@ class PbOMPLRobot():
         self._set_joint_positions(self.joint_idx, state)
         self.state = state
 
+    def safe_zip(self, sequence1, sequence2): # TODO: *args
+        sequence1, sequence2 = list(sequence1), list(sequence2)
+        assert len(sequence1) == len(sequence2)
+        return list(zip(sequence1, sequence2))
+
     def _set_joint_positions(self, joints, positions):
-        for joint, value in zip(joints, positions):
-            p.resetJointState(self.id, joint, value, targetVelocity=0)
+        for joint, value in self.safe_zip(joints, positions):
+            self._set_joint_position(joint, value, self.id)
+            # p.resetJointState(self.id, joint, value, targetVelocity=0)
+
+    def _set_joint_position(self, joint_id, value, body_id):
+        p.resetJointState(body_id, joint_id, value, targetVelocity=0)
 
 class PbStateSpace(ob.RealVectorStateSpace):
     def __init__(self, num_dim) -> None:
@@ -142,6 +155,7 @@ class PbOMPL():
 
         self.set_obstacles(obstacles)
         self.set_planner("RRT") # RRT by default
+        print("initialization complete")
 
     def set_obstacles(self, obstacles):
         self.obstacles = obstacles
@@ -173,6 +187,9 @@ class PbOMPL():
                 # print(get_body_name(body1), get_body_name(body2))
                 return False
         return True
+    
+    # def is_state_valid_2(self, state):
+    #     return get_collision_fn(self.robot.id, state, self.obstacles, attachments=[], self_collisions=True, disabled_collisions=set())
 
     def setup_collision_detection(self, robot, obstacles, self_collisions = True, allow_collision_links = []):
         self.check_link_pairs = utils.get_self_link_pairs(robot.id, robot.joint_idx) if self_collisions else []
@@ -262,7 +279,8 @@ class PbOMPL():
             path: list[state], a list of state
         '''
         for q in path:
-            self.robot.set_state(q)
+            for i in range(pandaNumDofs):
+                p.setJointMotorControl2(self.robot.id, i, p.POSITION_CONTROL, q[i],force=5 * 240.)
             p.stepSimulation()
             time.sleep(0.01)
 
