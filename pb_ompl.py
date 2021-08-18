@@ -7,8 +7,8 @@ except ImportError:
     # subdirectory of the parent directory called "py-bindings."
     from os.path import abspath, dirname, join
     import sys
-    # sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'ompl/py-bindings'))
-    sys.path.insert(0, join(dirname(abspath(__file__)), '../whole-body-motion-planning/src/ompl/py-bindings'))
+    sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'ompl/py-bindings'))
+    # sys.path.insert(0, join(dirname(abspath(__file__)), '../whole-body-motion-planning/src/ompl/py-bindings'))
     print(sys.path)
     from ompl import util as ou
     from ompl import base as ob
@@ -17,6 +17,7 @@ import pybullet as p
 import utils
 import time
 from itertools import product
+import copy
 
 INTERPOLATE_NUM = 500
 DEFAULT_PLANNING_TIME = 5.0
@@ -63,7 +64,7 @@ class PbOMPLRobot():
         return self.joint_bounds
 
     def get_cur_state(self):
-        return self.state
+        return copy.deepcopy(self.state)
 
     def set_state(self, state):
         '''
@@ -253,18 +254,25 @@ class PbOMPL():
         start = self.robot.get_cur_state()
         return self.plan_start_goal(start, goal, allowed_time=allowed_time)
 
-    def execute(self, path):
+    def execute(self, path, dynamics=False):
         '''
         Execute a planned plan. Will visualize in pybullet.
-        Use robot.set_state(), meaning that the simulator will simply reset robot's state WITHOUT any dynamics simulation. Since the
-        path is collision free, this is somewhat acceptable.
         Args:
             path: list[state], a list of state
+            dynamics: allow dynamic simulation. If dynamics is false, this API will use robot.set_state(),
+                      meaning that the simulator will simply reset robot's state WITHOUT any dynamics simulation. Since the
+                      path is collision free, this is somewhat acceptable.
         '''
         for q in path:
-            self.robot.set_state(q)
+            if dynamics:
+                for i in range(self.robot.num_dim):
+                    p.setJointMotorControl2(self.robot.id, i, p.POSITION_CONTROL, q[i],force=5 * 240.)
+            else:
+                self.robot.set_state(q)
             p.stepSimulation()
             time.sleep(0.01)
+
+
 
     # -------------
     # Configurations
