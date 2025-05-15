@@ -100,7 +100,7 @@ class PbOMPLRobot:
             high = joint_info[9]  # higher bounds
             if low < high:
                 joint_bounds.append([low, high])
-        print("Joint bounds: {}".format(joint_bounds))
+        # print("Joint bounds: {}".format(joint_bounds))
         self.joint_bounds = joint_bounds
         return self.joint_bounds
 
