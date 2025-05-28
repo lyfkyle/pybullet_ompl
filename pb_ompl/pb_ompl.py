@@ -715,20 +715,6 @@ def add_sphere(pybullet_client, sphere_pos, sphere_radius,
     return body_id
 
 
-def finite_difference_vector(x, dt=1., method='central'):
-    # finite differences with zero padding at the borders
-    diff_vector = np.zeros_like(x)
-    if method == 'forward':
-        diff_vector[..., :-1, :] = np.diff(x, axis=-2) / dt
-    elif method == 'backward':
-        diff_vector[..., 1:, :] = (x[..., 1:, :] - x[..., :-1, :]) / dt
-    elif method == 'central':
-        diff_vector[..., 1:-1, :] = (x[..., 2:, :] - x[..., :-2, :]) / (2*dt)
-    else:
-        raise NotImplementedError
-    return diff_vector
-
-
 def create_bspline_knots(num_control_points, degree):
     """
     Create the knots for a B-spline.
